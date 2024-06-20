@@ -2723,10 +2723,12 @@ defmodule Ash.Filter do
               {:error, error}
           end
         else
+          # We set public? to false in the context because the primary key might
+          # be private even if the relationship is public.
           with [field] <- Ash.Resource.Info.primary_key(context.resource),
-               attribute <- attribute(context, field),
-               {:ok, casted} <-
-                 Ash.Type.cast_input(attribute.type, nested_statement, attribute.constraints) do
+               %Ash.Resource.Attribute{type: type, constraints: constraints} <-
+                 attribute(%{context | public?: false}, field),
+               {:ok, casted} <- Ash.Type.cast_input(type, nested_statement, constraints) do
             add_expression_part({field, casted}, context, expression)
           else
             _other ->
